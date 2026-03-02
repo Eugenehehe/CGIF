@@ -1,0 +1,26 @@
+{
+  "change_order_id": "ECO-2026-992",
+  "request_header": {
+    "submitter": "ENG-442-JONES",
+    "project_code": "PROJECT-SKYNET-V3",
+    "priority": "CRITICAL",
+    "submission_timestamp": "2026-03-01T09:00:00Z"
+  },
+  "engineering_scope": {
+    "affected_part_id": "AS-550-XB",
+    "safety_critical": true,
+    "change_type": "GEOMETRY_ADJUSTMENT",
+    "revision_current": "R4",
+    "revision_target": "R5"
+  },
+  "financial_impact": {
+    "cost_delta": 4500.00,
+    "budget_approved": true,
+    "budget_code": "CAPEX-2026-DEV"
+  },
+  "compliance_status": {
+    "production_freeze_active": true,
+    "safety_validation_report": null,
+    "regulatory_filing_required": true
+  }
+}

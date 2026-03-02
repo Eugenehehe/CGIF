@@ -1,0 +1,18 @@
+[
+  {
+    "rule_id": "SAFETY-001",
+    "conditions": [
+      { "field": "safety_critical", "operator": "EQUALS", "value": true },
+      { "field": "safety_validation_report", "operator": "IS_NULL" }
+    ],
+    "action": { "decision": "REJECT", "reason": "Safety validation report missing for critical part." }
+  },
+  {
+    "rule_id": "FREEZE-001",
+    "conditions": [
+      { "field": "production_freeze_active", "operator": "EQUALS", "value": true },
+      { "field": "change_type", "operator": "EQUALS", "value": "GEOMETRY_ADJUSTMENT" }
+    ],
+    "action": { "decision": "FLAG_FOR_REVIEW", "reason": "Production freeze is active. Manual Plant Manager approval required." }
+  }
+]
