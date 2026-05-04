@@ -703,7 +703,7 @@ with tab1:
                     st.json(build_audit_log(scenario, data, [result["receipt"]], result["classification"]))
 
                 st.success(
-                    "Dr. Jacobs framing: this separates clinical ineligibility from documentation gaps, payer friction, access barriers, workflow failures, and ambiguous evidence."
+                    "Research framing: this separates clinical ineligibility from documentation gaps, payer friction, access barriers, workflow failures, and ambiguous evidence."
                 )
                 st.warning(
                     "Clinical safety boundary: this demo classifies readiness and drop-off reasons from supplied record/workflow fields. It does not make final clinical decisions."
