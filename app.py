@@ -93,15 +93,45 @@ TRAVEL_EXPENSE_DEFAULT_JSON = {
     ]
 }
 
+HEALTHCARE_REFERRAL_DEFAULT_JSON = {
+    "case_id": "LCS-CASE-2026-0001",
+    "patient_id": "PT-1048",
+    "service_requested": "Lung cancer screening / referral readiness",
+    "clinical_eligibility_status_from_record": "appears_eligible",
+    "age_documented": True,
+    "smoking_history_documented": True,
+    "provider_order_present": True,
+    "shared_decision_making_note_present": False,
+    "prior_auth_status": "approved",
+    "transportation_language_barrier_assessed": True,
+    "transportation_barrier_present": False,
+    "language_barrier_present": False,
+    "referral_sent": True,
+    "service_completed": False,
+    "clinical_note_quality": "clear",
+    "smoking_history_clarity": "clear",
+    "conflicting_documentation": False,
+    "subjective_medical_necessity_language": False,
+    "follow_up_reason_present": True,
+    "reviewer_note": ""
+}
+
+
+# -----------------------------------------------------------------------------
+# Shared Helpers
+# -----------------------------------------------------------------------------
+def _safe_date(date_text):
+    return datetime.strptime(date_text, "%Y-%m-%d").date()
+
+
+def _status_label(is_ready):
+    return "Present" if is_ready else "Missing"
+
 
 # -----------------------------------------------------------------------------
 # PDM / Engineering Governance Logic
 # -----------------------------------------------------------------------------
 def evaluate_pdm_change(data):
-    """
-    Simulates a rule-based engine that evaluates engineering change data against
-    PDM governance policies. Returns a list of audit results with evidence.
-    """
     audit_trail = []
 
     safety_check = {
@@ -157,10 +187,6 @@ def classify_pdm_risk(audit_results):
 # -----------------------------------------------------------------------------
 # Travel Expense Governance Logic
 # -----------------------------------------------------------------------------
-def _safe_date(date_text):
-    return datetime.strptime(date_text, "%Y-%m-%d").date()
-
-
 def _expense_dict_to_rows(expenses):
     rows = []
     for exp in expenses:
@@ -178,11 +204,6 @@ def _expense_dict_to_rows(expenses):
 
 
 def evaluate_travel_expense_case(data):
-    """
-    Evaluates travel expense reimbursement data against travel policy.
-    The engine does not directly reject the case. It produces Green / Yellow / Red
-    risk classification and an auditable explanation trail.
-    """
     audit_trail = []
     expenses = data.get("expenses", [])
     travel_start = _safe_date(data.get("travel_start_date"))
@@ -200,7 +221,6 @@ def evaluate_travel_expense_case(data):
         receipt_hash = exp.get("receipt_hash")
         exception_attached = exp.get("manager_exception_attached") is True
 
-        # Rule 1: Required receipt
         if exp.get("receipt_attached") is not True:
             audit_trail.append({
                 "expense_id": expense_id,
@@ -214,7 +234,6 @@ def evaluate_travel_expense_case(data):
                 "recommendation": "Request the missing receipt before payment approval."
             })
 
-        # Rule 2: Duplicate reimbursement
         if receipt_hash in reimbursed_hashes or receipt_hash in current_hashes:
             audit_trail.append({
                 "expense_id": expense_id,
@@ -230,7 +249,6 @@ def evaluate_travel_expense_case(data):
         if receipt_hash:
             current_hashes.add(receipt_hash)
 
-        # Rule 3: Travel date alignment
         expense_date = _safe_date(exp.get("expense_date"))
         if expense_date < travel_start or expense_date > travel_end:
             audit_trail.append({
@@ -245,7 +263,6 @@ def evaluate_travel_expense_case(data):
                 "recommendation": "Require explanation or manager exception before approval."
             })
 
-        # Rule 4: Manager preapproval scope
         if category not in approved_scope:
             audit_trail.append({
                 "expense_id": expense_id,
@@ -259,7 +276,6 @@ def evaluate_travel_expense_case(data):
                 "recommendation": "Ask manager to confirm whether this category is allowed."
             })
 
-        # Rule 5: Meal limit
         if category == "meal" and daily_meal_limit and amount > daily_meal_limit and not exception_attached:
             over_pct = ((amount - daily_meal_limit) / daily_meal_limit) * 100
             risk_class = "Red" if over_pct > 35 else "Yellow"
@@ -276,7 +292,6 @@ def evaluate_travel_expense_case(data):
                 "recommendation": "Route to finance reviewer for confirmation or request exception approval."
             })
 
-        # Rule 6: Hotel city limit
         if category == "hotel" and city_hotel_limit and amount > city_hotel_limit and not exception_attached:
             over_pct = ((amount - city_hotel_limit) / city_hotel_limit) * 100
             risk_class = "Red" if over_pct > 25 else "Yellow"
@@ -293,7 +308,6 @@ def evaluate_travel_expense_case(data):
                 "recommendation": "Finance reviewer should verify conference rate, city rate, or manager exception."
             })
 
-    # Rule 7: Budget pressure at case level
     total_expense = sum(float(exp.get("amount", 0)) for exp in expenses)
     budget_remaining = float(data.get("department_budget_remaining", 0))
     if budget_remaining and total_expense > budget_remaining:
@@ -320,6 +334,147 @@ def classify_travel_risk(audit_results):
     return "Green", "green", "Compliant with policy; eligible for auto-approval."
 
 
+# -----------------------------------------------------------------------------
+# Healthcare Referral Readiness Logic
+# -----------------------------------------------------------------------------
+def build_healthcare_checklist(data):
+    return [
+        {"Required Item": "Age", "Status": _status_label(data.get("age_documented") is True), "Why It Matters": "Eligibility evidence"},
+        {"Required Item": "Smoking history", "Status": _status_label(data.get("smoking_history_documented") is True), "Why It Matters": "Eligibility evidence"},
+        {"Required Item": "Provider order", "Status": _status_label(data.get("provider_order_present") is True), "Why It Matters": "Workflow readiness"},
+        {"Required Item": "Shared decision-making note", "Status": _status_label(data.get("shared_decision_making_note_present") is True), "Why It Matters": "Documentation readiness"},
+        {"Required Item": "Prior auth status", "Status": _status_label(data.get("prior_auth_status") not in [None, "", "missing"]), "Why It Matters": "Payer readiness"},
+        {"Required Item": "Transportation/language barrier assessment", "Status": _status_label(data.get("transportation_language_barrier_assessed") is True), "Why It Matters": "Access readiness"}
+    ]
+
+
+def evaluate_healthcare_referral_case(data):
+    """
+    Evaluates referral readiness and barrier type. This is workflow decision support only.
+    It does not make final clinical decisions.
+    """
+    checklist = build_healthcare_checklist(data)
+    evidence_present = [x["Required Item"] for x in checklist if x["Status"] == "Present"]
+    evidence_missing = [x["Required Item"] for x in checklist if x["Status"] == "Missing"]
+
+    ambiguity_signals = []
+    if data.get("clinical_note_quality") == "vague":
+        ambiguity_signals.append("vague clinical note")
+    if data.get("smoking_history_clarity") == "unclear":
+        ambiguity_signals.append("unclear smoking history")
+    if data.get("conflicting_documentation") is True:
+        ambiguity_signals.append("conflicting documentation")
+    if data.get("subjective_medical_necessity_language") is True:
+        ambiguity_signals.append("subjective medical necessity language")
+    if data.get("follow_up_reason_present") is False and data.get("service_completed") is False:
+        ambiguity_signals.append("missing follow-up reason")
+
+    clinical_status = data.get("clinical_eligibility_status_from_record", "unknown")
+    prior_auth_status = data.get("prior_auth_status")
+
+    if ambiguity_signals:
+        final_status = "Needs Human Review"
+        color = "orange"
+        barrier_category = "Needs human review"
+        recommended_action = "A human reviewer should resolve the ambiguity before the case is classified."
+        explanation = "This classification was made because the record contains ambiguity: " + ", ".join(ambiguity_signals) + "."
+    elif clinical_status == "not_eligible":
+        final_status = "Patient Does Not Appear Eligible From Record"
+        color = "red"
+        barrier_category = "Clinical ineligibility"
+        recommended_action = "Route to clinician or clinical operations reviewer to confirm whether the requested workflow is appropriate."
+        explanation = "This classification was made because the available record indicates the patient does not qualify for this workflow."
+    elif clinical_status == "unknown" or "Age" in evidence_missing or "Smoking history" in evidence_missing:
+        final_status = "Insufficient Evidence"
+        color = "orange"
+        barrier_category = "Insufficient evidence"
+        recommended_action = "Collect missing eligibility evidence before deciding whether the referral is ready."
+        explanation = "This classification was made because required evidence is missing: " + ", ".join(evidence_missing) + "."
+    elif "Provider order" in evidence_missing or "Shared decision-making note" in evidence_missing:
+        final_status = "Appears Eligible but Documentation Gap"
+        color = "orange"
+        barrier_category = "Documentation gap"
+        recommended_action = "Request the missing order or documentation before routing the case downstream."
+        explanation = "This classification was made because eligibility evidence is present, but documentation is missing: " + ", ".join(evidence_missing) + "."
+    elif prior_auth_status in ["denied", "pending", "delayed", "missing"]:
+        final_status = "Appears Eligible but Payer Blocked/Delayed"
+        color = "orange"
+        barrier_category = "Payer friction"
+        recommended_action = "Review payer requirements or prior authorization status before scheduling completion."
+        explanation = f"This classification was made because the case appears eligible, but prior auth status is `{prior_auth_status}`."
+    elif data.get("transportation_barrier_present") is True or data.get("language_barrier_present") is True:
+        final_status = "Appears Eligible but Access Barrier"
+        color = "orange"
+        barrier_category = "Access barrier"
+        recommended_action = "Route to care coordination for access support."
+        active_barriers = []
+        if data.get("transportation_barrier_present") is True:
+            active_barriers.append("transportation barrier")
+        if data.get("language_barrier_present") is True:
+            active_barriers.append("language barrier")
+        explanation = "This classification was made because the case appears eligible, but access barriers were documented: " + ", ".join(active_barriers) + "."
+    elif data.get("referral_sent") is True and data.get("service_completed") is False:
+        final_status = "Appears Eligible but Workflow Breakdown"
+        color = "orange"
+        barrier_category = "Workflow breakdown"
+        recommended_action = "Check referral handoff, scheduling status, and downstream completion owner."
+        explanation = "This classification was made because referral was sent, but the service was not completed."
+    else:
+        final_status = "Referral Ready"
+        color = "green"
+        barrier_category = "Ready / no barrier detected"
+        recommended_action = "Proceed with the normal scheduling or completion workflow."
+        explanation = "This classification was made because required evidence, documentation, payer readiness, and access readiness are present."
+
+    flags = []
+    if ambiguity_signals:
+        flags.append({
+            "rule": "HEALTH-HUMAN-REVIEW-001",
+            "description": "Human Review Required",
+            "severity": "HIGH",
+            "barrier_category": "Needs human review",
+            "evidence": ", ".join(ambiguity_signals),
+            "recommendation": recommended_action
+        })
+    if evidence_missing:
+        flags.append({
+            "rule": "HEALTH-EVIDENCE-001",
+            "description": "Missing Evidence Checklist",
+            "severity": "MEDIUM",
+            "barrier_category": barrier_category,
+            "evidence": "Missing items: " + ", ".join(evidence_missing),
+            "recommendation": "Complete missing evidence before final review."
+        })
+
+    decision_receipt = {
+        "case_id": data.get("case_id"),
+        "service_requested": data.get("service_requested"),
+        "policy_workflow_criteria_checked": [x["Required Item"] for x in checklist],
+        "evidence_present": evidence_present,
+        "evidence_missing": evidence_missing,
+        "barrier_category": barrier_category,
+        "recommended_next_action": recommended_action,
+        "classification_explanation": explanation,
+        "reviewer_note": data.get("reviewer_note", "")
+    }
+
+    return {
+        "final_status": final_status,
+        "color": color,
+        "barrier_category": barrier_category,
+        "recommended_action": recommended_action,
+        "explanation": explanation,
+        "checklist": checklist,
+        "evidence_present": evidence_present,
+        "evidence_missing": evidence_missing,
+        "flags": flags,
+        "decision_receipt": decision_receipt
+    }
+
+
+# -----------------------------------------------------------------------------
+# Audit Log
+# -----------------------------------------------------------------------------
 def build_audit_log(scenario_name, data, audit_results, final_status):
     return {
         "timestamp": datetime.now().isoformat(),
@@ -327,7 +482,7 @@ def build_audit_log(scenario_name, data, audit_results, final_status):
         "case_id": data.get("case_id") or data.get("ecn_id"),
         "final_status": final_status,
         "evaluations": audit_results,
-        "review_model": "Human-in-the-loop review for flagged cases",
+        "review_model": "Human-in-the-loop review for flagged or ambiguous cases",
         "audit_principle": "Every decision should preserve policy, evidence, exception, reviewer, and rationale."
     }
 
@@ -342,7 +497,8 @@ with st.sidebar:
         "Select CGIF Scenario",
         [
             "PDM / Engineering Change Governance",
-            "Travel Expense Reimbursement"
+            "Travel Expense Reimbursement",
+            "Healthcare Referral Readiness"
         ]
     )
 
@@ -350,12 +506,16 @@ with st.sidebar:
         default_json = TRAVEL_EXPENSE_DEFAULT_JSON
         text_label = "Travel Expense Case Data (JSON)"
         button_label = "Run Travel Expense Audit"
+    elif scenario == "Healthcare Referral Readiness":
+        default_json = HEALTHCARE_REFERRAL_DEFAULT_JSON
+        text_label = "Healthcare Referral Readiness Case Data (JSON)"
+        button_label = "Run Referral Readiness Check"
     else:
         default_json = PDM_DEFAULT_JSON
         text_label = "Engineering Change Data (JSON)"
         button_label = "Run Governance Audit"
 
-    input_text = st.text_area(text_label, value=json.dumps(default_json, indent=4), height=420)
+    input_text = st.text_area(text_label, value=json.dumps(default_json, indent=4), height=440)
     run_btn = st.button(button_label, type="primary")
 
 
@@ -380,7 +540,44 @@ with tab1:
         try:
             data = json.loads(input_text)
 
-            if scenario == "Travel Expense Reimbursement":
+            if scenario == "Healthcare Referral Readiness":
+                result = evaluate_healthcare_referral_case(data)
+                st.subheader(f"Case Classification: :{result['color']}[{result['final_status']}]")
+                st.write(result["explanation"])
+
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Service", "Lung Screening")
+                m2.metric("Barrier Category", result["barrier_category"])
+                m3.metric("Evidence Present", len(result["evidence_present"]))
+                m4.metric("Evidence Missing", len(result["evidence_missing"]))
+
+                st.markdown("### Missing Evidence Checklist")
+                st.dataframe(pd.DataFrame(result["checklist"]), use_container_width=True)
+
+                st.markdown("### What should a human review next?")
+                st.warning(result["recommended_action"])
+
+                if result["flags"]:
+                    st.markdown("### Review Flags")
+                    for res in result["flags"]:
+                        with st.container():
+                            st.markdown(f"""
+                            **Rule:** `{res['rule']}` | **Severity:** `{res['severity']}`  
+                            - **Intent:** {res['description']}
+                            - **Evidence:** `{res['evidence']}`
+                            - **Recommended Action:** {res['recommendation']}
+                            """)
+                            st.divider()
+
+                with st.expander("🧾 View Decision Receipt"):
+                    st.json(result["decision_receipt"])
+
+                with st.expander("📄 View Immutable Audit Log (JSON)"):
+                    st.json(build_audit_log(scenario, data, result["flags"], result["final_status"]))
+
+                st.info("Clinical safety note: this demo provides workflow and evidence-readiness support only. It does not make final clinical decisions.")
+
+            elif scenario == "Travel Expense Reimbursement":
                 audit_results = evaluate_travel_expense_case(data)
                 final_status, status_color, status_explanation = classify_travel_risk(audit_results)
 
@@ -456,7 +653,35 @@ with tab1:
 with tab2:
     st.title("📊 Operational Performance Impact")
 
-    if scenario == "Travel Expense Reimbursement":
+    if scenario == "Healthcare Referral Readiness":
+        st.markdown("### Manual Referral Follow-Up vs. CGIF Referral Readiness")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("Legacy Review", "Days to Weeks", delta="Manual chart chasing")
+            st.write("Staff manually inspect notes, orders, authorization status, scheduling status, and patient access barriers.")
+        with c2:
+            st.metric("CGIF-Assisted Review", "Minutes", delta="Structured barrier classification", delta_color="inverse")
+            st.write("CGIF separates ineligibility evidence, documentation gaps, payer friction, access barriers, workflow breakdowns, and insufficient evidence.")
+
+        st.markdown("---")
+        st.subheader("Structured Reasons Behind Non-Completion")
+        chart_data = pd.DataFrame(
+            {"Cases": [18, 24, 16, 12, 9, 21]},
+            index=[
+                "Clinical ineligibility",
+                "Documentation gap",
+                "Payer friction",
+                "Access barrier",
+                "Workflow breakdown",
+                "Insufficient evidence"
+            ]
+        )
+        st.bar_chart(chart_data)
+
+        st.success("Research framing: CGIF helps answer whether the patient did not receive care because they did not need it, or because the system failed to deliver it.")
+
+    elif scenario == "Travel Expense Reimbursement":
         st.markdown("### Legacy Travel Reimbursement vs. CGIF Review Flow")
 
         c1, c2 = st.columns(2)
@@ -499,7 +724,47 @@ with tab2:
 with tab3:
     st.title("📄 Scenario Design")
 
-    if scenario == "Travel Expense Reimbursement":
+    if scenario == "Healthcare Referral Readiness":
+        st.markdown("""
+        ### Healthcare Referral Readiness Scenario
+
+        **First use case:** Lung cancer screening / referral readiness.
+
+        **Business focus:** A patient appears eligible for a service, but the service is delayed, denied, or not completed.
+
+        #### Core Value
+        CGIF separates different failure reasons instead of collapsing everything into a vague "not completed" outcome:
+
+        | Situation | Meaning |
+        |---|---|
+        | Patient does not qualify | Clinical ineligibility |
+        | Patient qualifies but note is incomplete | Documentation gap |
+        | Patient qualifies but payer blocks/delays | Payer friction |
+        | Patient qualifies but cannot access service | Access barrier |
+        | Order/referral breaks downstream | Workflow breakdown |
+        | Not enough information | Insufficient evidence |
+
+        #### Product Boundary
+        CGIF does **not** replace clinicians and does **not** make final clinical decisions. It answers:
+
+        ```text
+        What is missing, what may be blocking the case, and what should a human review next?
+        ```
+
+        #### MVP Success Criteria
+        The MVP succeeds if one sample case can clearly output one of the following:
+
+        - Patient appears clinically eligible, but screening is blocked because shared decision-making documentation is missing.
+        - Patient appears eligible, but service was not completed due to a transportation barrier.
+        - Patient is not clinically eligible based on available evidence.
+
+        #### Primary Users
+        1. Clinical operations staff — reduce rework and delays.
+        2. Care coordination / referral staff — identify what blocks completion.
+        3. Health services researchers — study structured reasons behind utilization gaps.
+        4. Compliance / audit reviewers — preserve defensible explanation trails.
+        """)
+    elif scenario == "Travel Expense Reimbursement":
         st.markdown("""
         ### Travel Expense Implementation Scenario
 
