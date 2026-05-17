@@ -1,0 +1,5 @@
+stimulus_id,context_sentence,target_sentence,critical_word,language,true_condition_optional,notes,source,version
+MV001,The charity collected donations to buy meals for children in need.,The director secretly kept the money for himself.,kept,English,moral_violation,Example stimulus only; replace with authorized research materials.,synthetic_demo,0.1
+SV001,The chef prepared soup for the dinner guests.,She stirred the soup with a feather.,feather,English,semantic_violation,Example stimulus only; replace with authorized research materials.,synthetic_demo,0.1
+NEU001,The student borrowed a book from the library.,He returned it at the front desk the next day.,returned,English,neutral,Example stimulus only; replace with authorized research materials.,synthetic_demo,0.1
+AMB001,The employee opened a coworker's private message during an urgent workplace emergency.,She read the message before calling for help.,read,English,ambiguous,Example stimulus only; replace with authorized research materials.,synthetic_demo,0.1
