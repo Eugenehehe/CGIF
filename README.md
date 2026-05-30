@@ -4,7 +4,7 @@ CGIF is a P2D-style compliance and decision-intelligence project focused on turn
 
 ## Current Product Direction
 
-CGIF is now positioned as an **evidence review and routing engine** for policy-sensitive healthcare cases.
+CGIF is positioned as an **evidence review and routing workbench** for policy-sensitive healthcare cases.
 
 The core lesson from the meeting with Dr. Jacobs was:
 
@@ -16,7 +16,8 @@ The current healthcare workflow therefore focuses on:
 2. What evidence is missing
 3. What should not be concluded from current data
 4. Which team should review the case next
-5. What audit-ready evidence receipt should be preserved
+5. What human reviewer decided
+6. What audit-ready evidence receipt should be preserved
 
 The stronger product framing is not:
 
@@ -25,6 +26,31 @@ The stronger product framing is not:
 The stronger framing is:
 
 > CGIF turns claims and workflow evidence into an audit-ready review queue by showing what the data supports, what it does not support, and who should review next.
+
+## Current Main App: CGIF v4 Reviewer Workbench
+
+The newest page is:
+
+- `pages/2_CGIF_v4_Reviewer_Workbench.py`
+
+This page is designed to feel closer to a real operational product than a one-off demo dashboard.
+
+It includes:
+
+- Operational dashboard
+- Work queue table
+- Simulated role-based queue filtering
+- Case review page
+- Human reviewer decision capture
+- Reviewer rationale capture
+- Audit receipt page
+- Policy pack page
+- Admin / readiness checklist
+- CSV / JSON case upload
+- Sample case export
+- Work queue CSV export
+- Audit receipt JSON export
+- Audit event log in session state
 
 ## Primary Users
 
@@ -39,7 +65,7 @@ The realistic early users are not front-line physicians. The more likely early u
 - Quality improvement teams
 - Health services researchers
 
-## Streamlit Demo
+## Streamlit Demo Pages
 
 The Streamlit app supports multiple CGIF scenarios:
 
@@ -47,8 +73,9 @@ The Streamlit app supports multiple CGIF scenarios:
 2. Travel Expense Reimbursement
 3. Healthcare Referral Readiness / LDCT Screening Readiness
 4. CGIF Evidence Review & Routing Engine
+5. CGIF v4 Reviewer Workbench
 
-The upgraded healthcare page demonstrates a Medicare Fee-for-Service / LDCT-inspired review workflow with:
+The upgraded healthcare workbench demonstrates a Medicare Fee-for-Service / LDCT-inspired review workflow with:
 
 - Batch case review
 - Work queue summary
@@ -60,6 +87,7 @@ The upgraded healthcare page demonstrates a Medicare Fee-for-Service / LDCT-insp
 - Workflow and care-coordination evidence gaps
 - Indeterminate conclusions when current data is insufficient
 - Do-not-conclude guardrails
+- Human reviewer decision logging
 - Audit-ready evidence receipts
 - JSON and CSV export
 
@@ -86,7 +114,14 @@ Typical workflow layers:
 4. Responsible inference boundary check
 5. Review routing and owner assignment
 6. Human review for ambiguous or unsupported conclusions
-7. Audit logging / decision receipt
+7. Reviewer decision and rationale capture
+8. Audit logging / decision receipt
+
+## Documentation
+
+- [CGIF Industry Readiness Roadmap](docs/industry-readiness-roadmap.md)
+- [CGIF v4 Product Requirements](docs/product-requirements-cgif-v4.md)
+- [CGIF v4 Data Schema](docs/data-schema-cgif-v4.md)
 
 ## Positioning
 
@@ -101,17 +136,29 @@ CGIF helps users see:
 - what should remain indeterminate
 - what should not be concluded
 - which team should review next
+- what human reviewer decided
+- what audit trail was preserved
 
 The principle is:
 
 > We do not guess. We show what the evidence can and cannot support, then route the case to the right reviewer.
 
-## Roadmap
-
-See the industry-readiness roadmap:
-
-- [CGIF Industry Readiness Roadmap](docs/industry-readiness-roadmap.md)
-
 ## Prototype Boundary
 
-This repository is still a prototype. A production healthcare deployment would require security review, PHI-safe infrastructure, access control, real integration contracts, policy governance, human reviewer validation, and compliance approval.
+This repository is now an **industry-facing prototype**, not a production healthcare deployment.
+
+A production healthcare deployment would still require:
+
+- security review
+- PHI-safe infrastructure
+- authentication
+- role-based access control
+- database persistence
+- immutable audit logs
+- encryption
+- real integration contracts
+- policy governance
+- expert-labeled validation
+- compliance approval
+
+Do not use this prototype for final clinical, legal, coverage, fraud, or reimbursement decisions.
