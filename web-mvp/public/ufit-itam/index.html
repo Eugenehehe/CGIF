@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CGIF-ITAM | UFIT Flowtrac Reconciliation Workbench</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">CG</div>
+        <div>
+          <h1>CGIF-ITAM</h1>
+          <p>UFIT Inventory Evidence Workbench</p>
+        </div>
+      </div>
+      <nav>
+        <button class="nav active" data-page="overview">Overview</button>
+        <button class="nav" data-page="workflow">Before / After</button>
+        <button class="nav" data-page="queue">Exception Queue</button>
+        <button class="nav" data-page="detail">Asset Detail</button>
+        <button class="nav" data-page="rules">Routing Rules</button>
+        <button class="nav" data-page="receipts">Audit Receipts</button>
+      </nav>
+      <div class="side-note">
+        <strong>Prototype boundary</strong>
+        <span>Synthetic/anonymized data only. Do not upload real UFIT serials, bins, ticket IDs, or internal records.</span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div>
+          <span class="eyebrow">Cross-system IT asset governance</span>
+          <h2>Flowtrac may be the inventory system of record, but its data can become stale when receiving, scanning, deployment, or bin transportation evidence breaks.</h2>
+          <p>CGIF-ITAM reconciles Flowtrac against vendor, receiving scan, warehouse, technician deployment, and bin-ticket evidence. It shows what matches, what conflicts, what evidence is missing, and who should review next.</p>
+        </div>
+        <button id="exportAll">Export Audit Receipts</button>
+      </header>
+
+      <section class="metrics">
+        <div class="metric"><span>Total assets</span><strong id="mTotal">0</strong><small>Synthetic demo records</small></div>
+        <div class="metric"><span>High priority</span><strong id="mHigh">0</strong><small>Needs review</small></div>
+        <div class="metric"><span>Ready update</span><strong id="mReady">0</strong><small>Prepared for approval</small></div>
+        <div class="metric"><span>Missing evidence</span><strong id="mMissing">0</strong><small>Needs human confirmation</small></div>
+      </section>
+
+      <section id="overview" class="page active">
+        <div class="panel">
+          <h3>What problem this solves</h3>
+          <div class="three">
+            <div class="card"><h4>1. Flowtrac can be stale</h4><p>A device may physically move from warehouse to building, but Flowtrac bin may not update if the bin transportation ticket is missing or delayed.</p></div>
+            <div class="card"><h4>2. Serial numbers can conflict</h4><p>Vendor, scanner spreadsheet, and Flowtrac records may disagree because of scanner, import, barcode, or formatting issues.</p></div>
+            <div class="card"><h4>3. Manual audit is slow</h4><p>Student ops or DCL staff may spend time manually checking Excel files without a consistent review rationale or audit receipt.</p></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>CGIF-ITAM output</h3>
+          <div class="five">
+            <div class="mini">Matched evidence</div>
+            <div class="mini">Conflicting evidence</div>
+            <div class="mini">Missing evidence</div>
+            <div class="mini">Reviewer routing</div>
+            <div class="mini">Flowtrac update preview</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="workflow" class="page">
+        <div class="panel split">
+          <div>
+            <h3>Before CGIF-ITAM</h3>
+            <ol class="flow"><li>UF department sends RFQ ticket to DCL.</li><li>DCL requests quotes from vendors.</li><li>Department chooses vendor and order is made.</li><li>Vendor ships items to warehouse.</li><li>Warehouse receives and scans items.</li><li>Script/spreadsheet prepares Flowtrac records.</li><li>Technician deploys device.</li><li>Technician should send bin transportation ticket.</li><li>Flowtrac bin should update.</li><li>If any step fails, Megan/student ops manually audits mismatches.</li></ol>
+          </div>
+          <div>
+            <h3>After CGIF-ITAM</h3>
+            <ol class="flow after"><li>Upload Flowtrac export, vendor source, scan spreadsheet, and ticket evidence.</li><li>Normalize serials and compare sources.</li><li>Detect stale bins, serial conflicts, missing tickets, and ready updates.</li><li>Route each exception to the right reviewer.</li><li>Reviewer approves, overrides, or requests evidence.</li><li>Generate update preview and audit receipt.</li></ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="queue" class="page">
+        <div class="panel">
+          <div class="panel-top"><h3>Exception Queue</h3><div class="filters"><input id="search" placeholder="Search asset, serial, bin, queue..." /><select id="statusFilter"><option>All</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Asset</th><th>Finding</th><th>Review Queue</th><th>Priority</th><th>Confidence</th><th>Action</th><th></th></tr></thead><tbody id="queueRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="detail" class="page">
+        <div class="panel" id="detailPanel"></div>
+      </section>
+
+      <section id="rules" class="page">
+        <div class="panel">
+          <h3>Routing Rules</h3>
+          <table><thead><tr><th>Finding</th><th>Reason</th><th>Reviewer</th></tr></thead><tbody><tr><td>Serial mismatch</td><td>Vendor, scanner, and Flowtrac serials do not agree.</td><td>Warehouse Receiving Review</td></tr><tr><td>Flowtrac missing item</td><td>Vendor/receiving evidence exists but Flowtrac record is missing.</td><td>DCL Inventory Review</td></tr><tr><td>Possible stale bin</td><td>Deployment/bin ticket supports movement but Flowtrac still shows warehouse or old bin.</td><td>Flowtrac Update Review</td></tr><tr><td>Missing deployment evidence</td><td>Flowtrac bin may be old, but no ticket or confirmation supports movement.</td><td>Technician Confirmation</td></tr><tr><td>Conflicting bin evidence</td><td>Different sources point to different buildings or bins.</td><td>Physical Audit</td></tr><tr><td>Repeated missing tickets</td><td>Operational gap in technician-to-DCL transportation ticket flow.</td><td>Process Gap Escalation</td></tr></tbody></table>
+        </div>
+        <div class="panel warning"><h3>Evidence Boundary</h3><p>CGIF-ITAM should not treat an inferred bin, DNS clue, or missing ticket as final physical truth. It separates proposed updates from approved updates.</p></div>
+      </section>
+
+      <section id="receipts" class="page">
+        <div class="panel"><div class="panel-top"><h3>Audit Receipts</h3><button id="exportReceipts">Export JSON</button></div><div id="receiptList" class="receipt-list"></div></div>
+      </section>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
