@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CGIF-Accounting | Accounting Judgment Evidence Workbench</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand"><div class="logo">CG</div><div><h1>CGIF-Accounting</h1><p>Judgment Evidence Workbench</p></div></div>
+      <button class="nav active" data-page="overview">Overview</button>
+      <button class="nav" data-page="workflow">Before / After</button>
+      <button class="nav" data-page="queue">Judgment Queue</button>
+      <button class="nav" data-page="detail">Line Detail</button>
+      <button class="nav" data-page="rules">Review Rules</button>
+      <button class="nav" data-page="receipts">Audit Receipts</button>
+      <div class="note"><b>Boundary</b><span>Demo only. Not accounting, audit, tax, or legal advice. This preserves judgment space; it does not replace CPA/controller/auditor review.</span></div>
+    </aside>
+    <main>
+      <header class="hero">
+        <div>
+          <span class="eyebrow">Based on Jiayi's feedback</span>
+          <h2>Accounting teams often need defensible judgment, not a rigid AI conclusion.</h2>
+          <p>CGIF-Accounting reviews accounting evidence, shows supportable treatments, flags missing documents, prevents unsupported conclusions, and routes judgment-heavy items to the right reviewer.</p>
+        </div>
+        <button id="exportAll">Export Receipts</button>
+      </header>
+
+      <section class="metrics">
+        <div><span>Total lines</span><b id="mTotal">0</b><small>Synthetic invoice lines</small></div>
+        <div><span>High judgment</span><b id="mHigh">0</b><small>Needs senior review</small></div>
+        <div><span>Missing evidence</span><b id="mMissing">0</b><small>Needs documents</small></div>
+        <div><span>Supported treatment</span><b id="mSupported">0</b><small>Evidence appears strong</small></div>
+      </section>
+
+      <section id="overview" class="page active">
+        <div class="panel">
+          <h3>Scenario: SaaS / software implementation cost treatment</h3>
+          <p>A company receives invoices for a software implementation project. Line items include configuration, data migration, training, support, customization, and subscription fees. The accounting team must decide whether each item is capitalized, expensed, deferred, or escalated for technical accounting review.</p>
+          <div class="three"><div class="card"><h4>Problem</h4><p>Invoice descriptions are often vague. Evidence is scattered across contracts, SOWs, project plans, approvals, and vendor invoices.</p></div><div class="card"><h4>Jiayi's point</h4><p>Companies may need accounting judgment space. The system should not lock them into one rigid conclusion before review.</p></div><div class="card"><h4>CGIF answer</h4><p>Show evidence support, missing documents, risk, reviewer routing, and audit receipt instead of pretending the answer is always black-and-white.</p></div></div>
+        </div>
+      </section>
+
+      <section id="workflow" class="page">
+        <div class="panel split"><div><h3>Before CGIF-Accounting</h3><ol><li>Accounting receives invoices and contracts.</li><li>Staff manually reads line descriptions.</li><li>Items are classified in Excel.</li><li>Ambiguous cases are discussed over email/chat.</li><li>Evidence is scattered across SOW, contract, PO, approval, and project records.</li><li>Audit support may need to be recreated later.</li></ol></div><div><h3>After CGIF-Accounting</h3><ol><li>Invoice/project evidence is entered or uploaded.</li><li>CGIF classifies evidence strength and risk.</li><li>CGIF lists missing support and do-not-conclude guardrails.</li><li>Judgment-heavy items are routed to accounting manager, technical accounting, controller, or project owner.</li><li>Reviewer approves, overrides, or requests evidence.</li><li>Audit-ready receipt is preserved.</li></ol></div></div>
+      </section>
+
+      <section id="queue" class="page">
+        <div class="panel"><div class="top"><h3>Accounting Judgment Queue</h3><div><input id="search" placeholder="Search line, vendor, treatment, reviewer..." /><select id="priorityFilter"><option>All</option><option>High</option><option>Medium</option><option>Low</option></select></div></div><table><thead><tr><th>Line</th><th>Finding</th><th>Suggested Treatment</th><th>Reviewer</th><th>Priority</th><th>Risk</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+      </section>
+
+      <section id="detail" class="page"><div class="panel" id="detailPanel"></div></section>
+
+      <section id="rules" class="page">
+        <div class="panel"><h3>Review rules</h3><table><thead><tr><th>Evidence pattern</th><th>Possible treatment</th><th>Reviewer</th></tr></thead><tbody><tr><td>Configuration / implementation evidence strong</td><td>Capitalization may be supportable</td><td>Accounting Manager</td></tr><tr><td>Training / general support</td><td>Expense likely</td><td>Accounting Close Review</td></tr><tr><td>Mixed invoice line</td><td>Allocation needed</td><td>Accounting Manager</td></tr><tr><td>Contract/SOW ambiguity</td><td>Technical accounting review</td><td>Technical Accounting</td></tr><tr><td>Weak evidence but management-preferred treatment</td><td>Judgment risk</td><td>Controller / Audit Review</td></tr><tr><td>Missing project approval</td><td>Evidence gap before capitalization</td><td>Project Owner / Controller</td></tr></tbody></table></div>
+        <div class="panel warning"><h3>Do not overstate the system</h3><p>CGIF-Accounting assists judgment. It does not make final accounting policy decisions or replace controller/auditor judgment.</p></div>
+      </section>
+
+      <section id="receipts" class="page"><div class="panel"><div class="top"><h3>Audit Receipts</h3><button id="exportReceipts">Export JSON</button></div><div id="receiptList"></div></div></section>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
